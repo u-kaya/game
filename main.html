@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Population Quiz</title>
+</head>
+<body>
+    <h2>Guess the Population of Berlin</h2>
+    
+    <p>How many people live in Berlin?</p>
+    
+    <label>Minimum Estimate:</label>
+    <input type="number" id="minPopulation">
+    <br><br>
+    
+    <label>Maximum Estimate:</label>
+    <input type="number" id="maxPopulation">
+    <br><br>
+
+    <button onclick="submitAnswer()">Submit Answer</button>
+    
+    <h3>Saved Answers:</h3>
+    <ul id="answers-list"></ul>
+
+    <script>
+        function submitAnswer() {
+            let question = "How many people live in Berlin?";
+            let minEstimate = parseInt(document.getElementById("minPopulation").value);
+            let maxEstimate = parseInt(document.getElementById("maxPopulation").value);
+
+            if (isNaN(minEstimate) || isNaN(maxEstimate)) {
+                alert("Please enter valid numbers for both estimates.");
+                return;
+            }
+
+            let actualPopulation = 3700000; // Approximate population of Berlin
+            let isCorrect = minEstimate <= actualPopulation && maxEstimate >= actualPopulation;
+
+            fetch("http://localhost:3000/save-answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question, minEstimate, maxEstimate, isCorrect })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("response").innerText = data.success 
+                    ? "Answer saved successfully! ✅" 
+                    : "Failed to save answer ❌";
+                loadAnswers(); // Reload answers
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("response").innerText = "Error sending request.";
+            });
+        }
+
+        function loadAnswers() {
+            fetch("http://localhost:3000/answers")
+                .then(response => response.json())
+                .then(data => {
+                    const answersList = document.getElementById("answers-list");
+                    answersList.innerHTML = ""; // Clear old list
+                    
+                    data.answers.forEach(answer => {
+                        const listItem = document.createElement("li");
+                        listItem.textContent = `${answer.question} - Min: ${answer.minEstimate}, Max: ${answer.maxEstimate} (Correct: ${answer.isCorrect})`;
+                        answersList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading answers:", error);
+                });
+        }
+
+        window.onload = loadAnswers;
+    </script>
+</body>
+</html>
